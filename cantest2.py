@@ -3,6 +3,7 @@ import os
 from Tkinter import *
 import Tkinter
 import time
+import subprocess
 log_path = "/home/pi/cantest/log.txt"
 can_addr = 3
 start_data = 7
@@ -27,11 +28,13 @@ ACU_sb = 40
 lon_con_sb = 48
 lat_con_sb = 56
 
+prv_state = 0
+
 bus = can.interface.Bus(channel='can0', bustype='socketcan_native', bitrate = 500000)
 
 os.system("sudo /sbin/ip link set can0 up type can bitrate 500000")
 
-
+#time.sleep(5)
 root = Tkinter.Tk()
 canvas = Tkinter.Canvas(root, width = 500, height = 500)
 canvas.pack()
@@ -140,6 +143,7 @@ while  1:
             lat_con = int(bit_data[lat_con_sb : lat_con_sb + sl],2)
             print 'act_kph' , str(act_kph) , 'set_kph' , str(set_kph) , 'state' , str(state) , 'radar' , str(radar), 'camera', str(camera), 'ACU' , str(ACU), 'lon_con', str(lon_con), 'lat_con', str(lat_con)
 
+
             if radar == 0 :
                 canvas.create_oval(5, 100, 55, 150, fill = 'gray') #Radar Ready
             else :
@@ -178,11 +182,33 @@ while  1:
             l_vsd.place(x = 160, y = 310)
             l_ssd.place(x = 270, y = 310)
             root.update()
+            if state == 0:
+                if prv_state == 1 or prv_state == 2 or prv_state == 3:
+                    proc = subprocess.Popen("sudo omxplayer /home/pi/cantest/disengaged.wav", stdout = subprocess.PIPE, shell = True)
+                prv_state = 0
+            
+            if state == 1:
+                if prv_state == 0:
+                    proc = subprocess.Popen("sudo omxplayer /home/pi/cantest/Init.wav", stdout = subprocess.PIPE, shell = True)
+                prv_state = 1
+            if state == 2 :
+#if prv_state != 2 :
+#proc = subprocess.Popen("sudo python /home/pi/cantest/grab.py", stdout = subprocess.PIPE, shell = True)
+#proc = subprocess.Popen("sudo omxplayer /home/pi/cantest/grabSteer.wav", stdout = subprocess.PIPE, shell = True)
+                os.system("omxplayer grabSteer.wav")
+                prv_state = 2
+            if state == 3 :
+#if prv_state != 3 :
+                os.system("omxplayer grabSteer.wav")
+                    #proc = subprocess.Popen("sudo python /home/pi/cantest/grab.py", stdout = subprocess.PIPE, shell = True)
+#               proc = subprocess.Popen("sudo omxplayer /home/pi/cantest/grabSteer.wav", stdout = subprocess.PIPE, shell = True)
+                prv_state = 3
+
             bus.flush_tx_buffer()
             bus.shutdown()
     except KeyboardInterrupt :
         break
-#    except : 
-#        pass
+    except : 
+        pass
 
 
